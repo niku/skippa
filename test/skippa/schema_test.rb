@@ -1,12 +1,8 @@
 require "test_helper"
 require "ripper"
 
-class SkippaTest < Minitest::Test
-  def test_that_it_has_a_version_number
-    refute_nil ::Skippa::VERSION
-  end
-
-  def test_it_does_something_useful
+class SchemaTest < Minitest::Test
+  def setup
     doc = <<'__EOD__'
 ActiveRecord::Schema.define(version: 20180522032741) do
   enable_extension "plpgsql"
@@ -25,7 +21,23 @@ ActiveRecord::Schema.define(version: 20180522032741) do
   add_index "users", ["email"], name: "index_users_on_email", unique: true, using: :btree
 end
 __EOD__
-    assert_equal Skippa::Schema, Skippa.parse(doc).class
-    assert_equal "20180522032741", Skippa.parse(doc).info["version"]
+    sexp = Ripper.sexp(doc).dig(1, 0)
+    @schema = Skippa::Schema.parse(sexp)
+  end
+
+  def test_info
+    assert_equal({ "version" => "20180522032741" }, @schema.info)
+  end
+
+  def test_extentions
+    assert_equal ["plpgsql", "hstore"], @schema.extentions.map(&:name)
+  end
+
+  def test_tables
+    assert_equal ["access_log", "users"], @schema.tables.map(&:name)
+  end
+
+  def test_indexes
+    assert_equal ["index_users_on_email"], @schema.indexes.map { |index| index.options["name"] }
   end
 end
