@@ -69,6 +69,8 @@ module Skippa
                     v.dig(1)
                   when :symbol #symbol
                     v.dig(1, 1)
+                  when Array # array of string/symbol
+                    v.map{|s| s.dig(1, 1, 1)}
                   end
                 else
                   v
